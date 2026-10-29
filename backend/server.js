@@ -69,6 +69,24 @@ function sendError(res, error, fallbackMessage) {
   });
 }
 
+function extractGeminiText(response) {
+  try {
+    if (typeof response?.text === "string" && response.text.trim()) {
+      return response.text.trim();
+    }
+  } catch {
+    // .text can throw when the SDK only has thought parts or a blocked candidate.
+  }
+
+  const parts = response?.candidates?.[0]?.content?.parts || [];
+
+  return parts
+    .filter((part) => !part.thought && typeof part.text === "string")
+    .map((part) => part.text)
+    .join("\n")
+    .trim();
+}
+
 function mongoReady() {
   return mongoose.connection.readyState === 1;
 }
@@ -188,15 +206,22 @@ Use these headings:
 Use only supplied figures. Do not invent market facts or recommend buying or selling. Mention that historical results do not predict future performance and that taxes and slippage are excluded. Keep the report under 350 words.`,
       config: {
         temperature: 0.2,
-        maxOutputTokens: 1200,
+        maxOutputTokens: 8192,
+        thinkingConfig: {
+          thinkingLevel: "minimal",
+        },
       },
     });
 
-    const report = response.text?.trim();
+    const report = extractGeminiText(response);
+    const finishReason = response.candidates?.[0]?.finishReason;
 
-    if (!report || response.candidates?.[0]?.finishReason === "MAX_TOKENS") {
+    if (!report) {
       return res.status(502).json({
-        error: "The report was incomplete. Please retry.",
+        error:
+          finishReason === "MAX_TOKENS"
+            ? "The report was cut off before any text was returned. Please retry."
+            : "Gemini did not return a research report. Please retry.",
       });
     }
 

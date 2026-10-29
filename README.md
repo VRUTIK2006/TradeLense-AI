@@ -4,6 +4,8 @@ Educational stock-research workspace. Analyze a ticker, run a historical SMA cro
 
 This is a **working full-stack prototype**: React UI + Express API + MongoDB + market data + Gemini. It is **not** a broker, not live trading, and not investment advice.
 
+![PDFBot demo](docs/demo.gif)
+
 ---
 
 ## Features

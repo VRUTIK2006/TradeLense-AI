@@ -168,7 +168,11 @@ function App() {
         throw new Error(data.error || "Research generation failed.");
       }
 
-      setResearch(data.report);
+      if (typeof data.report !== "string" || !data.report.trim()) {
+        throw new Error("The assistant returned an empty report. Please retry.");
+      }
+
+      setResearch(data.report.trim());
     } catch (err) {
       setResearch(`Unable to generate report: ${err.message}`);
     } finally {
